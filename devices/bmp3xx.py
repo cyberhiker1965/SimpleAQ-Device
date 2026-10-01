@@ -3,7 +3,6 @@
 from absl import logging
 from . import Sensor
 
-import board
 import adafruit_bmp3xx
 import time
 from adafruit_bmp3xx import _REGISTER_CONTROL, _REGISTER_STATUS, _REGISTER_PRESSUREDATA
@@ -68,9 +67,9 @@ def patch_bmp3xx_read(self):
 
 
 class Bmp3xx(Sensor):
-  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
-    self.sensor = adafruit_bmp3xx.BMP3XX_I2C(board.I2C())
+    self.sensor = adafruit_bmp3xx.BMP3XX_I2C(i2c)
 
     # We encounter an issue where bus instability causes an infinite loop in default
     # adafruit_bmp3xx read.

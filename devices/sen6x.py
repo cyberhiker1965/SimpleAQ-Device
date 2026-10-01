@@ -4,18 +4,17 @@ from absl import logging
 import math
 import time
 import adafruit_sen6x
-import board
 
 from . import Sensor
 
 # Based on the SEN5X driver and adafruit-circuitpython-sen6x library
 class Sen6x(Sensor):
-  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
 
     # Initialize the SEN6X device using the Adafruit library
     # Note: You may need to specify SEN60, SEN63, SEN65, or SEN66 depending on your hardware
-    self.device = adafruit_sen6x.SEN66(board.I2C())
+    self.device = adafruit_sen6x.SEN66(i2c)
     self.has_transmitted_device_info = False
 
     # Get device information

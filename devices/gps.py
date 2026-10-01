@@ -9,12 +9,11 @@ import time
 from absl import logging
 from . import Sensor
 
-import board
 import adafruit_gps
 
 
 class Gps(Sensor):
-  def __init__(self, remotestorage, localstorage, timesource, interval=None, send_last_known_gps=False, env_file=None, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c, interval=None, send_last_known_gps=False, env_file=None, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
 
     self.name = "GPS"
@@ -31,7 +30,7 @@ class Gps(Sensor):
     self.has_transmitted_device_info = False
 
     try:
-      self.gps = adafruit_gps.GPS_GtopI2C(board.I2C())
+      self.gps = adafruit_gps.GPS_GtopI2C(i2c)
       # Turn on everything the module collects.
       self.gps.send_command(b"PMTK314,1,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0")
       # Update once every second (1000ms)

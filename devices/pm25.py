@@ -2,17 +2,14 @@
 
 from absl import logging
 
-import board
-import busio
 from adafruit_pm25.i2c import PM25_I2C
 
 from . import Sensor
 
 
 class Pm25(Sensor):
-  def __init__(self, remotestorage, localstorage, timesource, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
-    i2c = busio.I2C(board.SCL, board.SDA, frequency=100000)
     self.pm25 = PM25_I2C(i2c)
     self.name = "PM25"
 
@@ -48,6 +45,6 @@ class Pm25(Sensor):
 
     except Exception as err:
       logging.error("Error getting data from PM25.  Is this sensor correctly installed and the cable attached tightly:  " + str(err));
-      result = device.name 
+      result = device.name
 
     return result

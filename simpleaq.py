@@ -8,6 +8,8 @@ import time
 import RPi.GPIO as GPIO
 import subprocess
 
+import board
+
 from absl import app, flags, logging
 
 import dotenv
@@ -74,14 +76,18 @@ def detect_devices(env_file):
   detected_devices = set()
   test_timesource = SystemTimeSource()
 
-  # Figure out what devices are connected.
+  # Determine the set of installed devices before opening the real storage backends.
+  # Both device detection and the production loop need a single, shared CircuitPython
+  # I2C bus object for the Adafruit/CircuitPython drivers.
+  shared_i2c = board.I2C()
+
   with contextlib.closing(LocalDummy()) as local_storage:
     with DummyStorage() as remote_storage:
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
         for name, device in device_map.items():
           device_object = None
           try:
-            device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file, log_errors=False)
+            device_object = device(remotestorage=remote_storage, localstorage=local_storage, i2c=shared_i2c, i2c_transceiver=i2c_transceiver, timesource=test_timesource, env_file=env_file, log_errors=False)
             device_object.publish()
             detected_devices.add(name)
             logging.info("Detected device: {}".format(name))
@@ -172,6 +178,11 @@ def main(args):
 
     interval = int(os.getenv('simpleaq_interval'))
 
+    # Reuse the same CircuitPython I2C bus across all drivers.  Creating one bus
+    # and sharing it avoids opening multiple file descriptors for /dev/i2c-1 and
+    # reduces the chance of bus contention on resource-constrained hardware.
+    shared_i2c = board.I2C()
+
     with remote_storage_class(endpoint=os.getenv('influx_server'), organization=os.getenv('influx_org'), bucket=os.getenv('influx_bucket'), token=os.getenv('influx_token')) as remote:
       with LinuxI2cTransceiver(os.getenv('i2c_bus')) as i2c_transceiver:
         sensors = []
@@ -182,6 +193,7 @@ def main(args):
                                    localstorage=local_storage,
                                    timesource=timesource,
                                    interval=interval,
+                                   i2c=shared_i2c,
                                    i2c_transceiver=i2c_transceiver,
                                    log_errors=True,
                                    env_file=FLAGS.env,

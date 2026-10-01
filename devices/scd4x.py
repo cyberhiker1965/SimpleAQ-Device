@@ -3,39 +3,19 @@
 from absl import logging
 from . import Sensor
 
-import board
 import adafruit_scd4x
 
 class Scd4x(Sensor):
   I2C_ADDRESS = 0x62
 
-  def __init__(self, remotestorage, localstorage, timesource, i2c_transceiver, **kwargs):
+  def __init__(self, remotestorage, localstorage, timesource, i2c, **kwargs):
     super().__init__(remotestorage, localstorage, timesource)
-    self.sensor = adafruit_scd4x.SCD4X(board.I2C())
+    self.sensor = adafruit_scd4x.SCD4X(i2c)
     self.name = "SCD4X"
-    self.i2c_transceiver = i2c_transceiver
     self.has_reported_serial = False
-
-    if not self._probe_device:
-      raise Exception("No device at SCD4X's I2C address, 0x62")
 
     self.serial_number = "".join(f"{word:04X}" for word in self.sensor.serial_number)
     self.sensor.start_periodic_measurement()
-
-  def _probe_device(self):
-    """Attempt to detect device presence with minimal bus interaction"""
-    try:
-      # Try a zero-byte write - many I2C implementations support this for device detection
-      status, error, _ = self.i2c_transceiver.transceive(
-          self.I2C_ADDRESS,
-          bytes([]),  # Empty write
-          0,  # No read
-          read_delay=0,
-          timeout=1  # Short timeout for probe
-      )
-      return status and not error
-    except:
-      return False
 
   def publish(self):
     logging.info('Publishing SCD4X Data')
